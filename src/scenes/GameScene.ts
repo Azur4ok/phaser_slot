@@ -8,13 +8,14 @@ interface Reel {
 }
 
 export class GameScene extends Scene {
-  private static REEL_WIDTH: number = 180
-  private static SYMBOL_SIZE: number = 170
-  private static WIDTH: number = 1024
-  private static HEIGHT: number = 768
+  private REEL_WIDTH: number = 160
+  private SYMBOL_SIZE: number = 150
+  private WIDTH: number = 1024
+  private HEIGHT: number = 768
   private isRunning: boolean = false
   private reels: Reel[] = []
-  keys!: string[]
+  private keys: string[] = []
+  private textPlayButton!: Phaser.GameObjects.Text
 
   constructor() {
     super('game-scene')
@@ -40,24 +41,18 @@ export class GameScene extends Scene {
   buildReels(): void {
     const reelContainer = this.add.container()
 
-    const margin = (GameScene.HEIGHT - GameScene.SYMBOL_SIZE * 3) / 2
+    const margin = (this.HEIGHT - this.SYMBOL_SIZE * 3) / 2
 
-    reelContainer.y = margin + margin - 30
-    reelContainer.x = Math.round(GameScene.WIDTH - GameScene.REEL_WIDTH * 5)
+    reelContainer.y = margin + (margin - 80)
+    reelContainer.x = Math.round(this.WIDTH - this.REEL_WIDTH * 5.3)
 
-    const bottom = this.add.rectangle(
-      0,
-      GameScene.SYMBOL_SIZE * 3.5 + margin,
-      GameScene.WIDTH * 2,
-      margin + 10,
-      0xccccc,
-    )
+    this.add.rectangle(0, this.SYMBOL_SIZE * 3.57 + margin, this.WIDTH * 2, margin, 0xccccc)
 
-    const top = this.add.rectangle(0, 0, GameScene.WIDTH * 2, margin + 155, 0xccccc)
+    this.add.rectangle(0, 0, this.WIDTH * 3, margin + this.REEL_WIDTH, 0xccccc)
 
     for (let i = 0; i < 5; i++) {
       const rc = new Phaser.GameObjects.Container(this)
-      rc.x = i * GameScene.REEL_WIDTH
+      rc.x = i * this.REEL_WIDTH
       reelContainer.add(rc)
 
       const reel: Reel = {
@@ -75,12 +70,12 @@ export class GameScene extends Scene {
           this.keys[Math.floor(Math.random() * this.keys.length)],
         )
 
-        symbol.x = Math.round((GameScene.SYMBOL_SIZE - symbol.width) / 2)
-        symbol.y = j * GameScene.SYMBOL_SIZE
+        symbol.x = Math.round((this.SYMBOL_SIZE - symbol.width) / 2)
+        symbol.y = j * this.SYMBOL_SIZE
 
         symbol.scaleX = symbol.scaleY = Math.min(
-          GameScene.SYMBOL_SIZE / symbol.width,
-          GameScene.SYMBOL_SIZE / symbol.height,
+          this.SYMBOL_SIZE / symbol.width,
+          this.SYMBOL_SIZE / symbol.height,
         )
 
         reel.symbols.push(symbol)
@@ -91,82 +86,69 @@ export class GameScene extends Scene {
     }
   }
 
-  backout(amount: number): (t: number) => number {
-    return (t: number) => --t * t * ((amount + 1) * t + amount) + 1
-  }
-
-  reelsComplete(): void {
-    this.isRunning = false
-  }
-
   create(): void {
     this.buildReels()
-    for (let i = 0; i < this.reels.length; i++) {
-      this.tweens.add({
-        targets: this.reels[i].symbols,
-        duration: 3000,
-        y: 800,
-        ease: 'Sine',
-        onComplete: i === this.reels.length - 1 ? this.reelsComplete : null,
-      })
-    }
 
-    const startPlayHandler = () => {
-      if (this.isRunning) return
-      this.isRunning = true
-
-      // // for (let i = 0; i < this.reels.length; i++) {
-      // //   const reel = this.reels[i]
-      // //   const extra = Math.floor(Math.random() * 3)
-      // //   const target = reel.position + 10 + i * 5 + extra
-      // //   const time = 2500 + i * 600 + extra * 600
-      // //   this.tweens.add({
-      // //     targets: reel.symbols[i],
-      // //     duration: time,
-      // //     y: target,
-      // //     ease: 'Power3',
-      // //     onComplete: i === this.reels.length - 1 ? this.reelsComplete : null,
-      // //   })
-      // // }
-    }
-
-    const textButton = this.add.text(GameScene.WIDTH / 2.4, GameScene.HEIGHT - 70, 'start', {
+    this.textPlayButton = this.add.text(this.WIDTH / 2.4, this.HEIGHT - 100, 'start', {
       fontStyle: 'bold',
       fontSize: '36px',
       color: '#000',
     })
 
-    textButton.setInteractive({
+    this.textPlayButton.setInteractive({
       cursor: 'pointer',
     })
 
-    textButton.on('pointerdown', () => {
-      startPlayHandler()
+    this.textPlayButton.on('pointerdown', () => {
+      this.onStart()
     })
   }
+  
+  reelsComplete(): void | Function {
+    this.isRunning = false  
+  }
 
-  // update(time: number, delta: number): void {
-  //   if (!this.isRunning) return
+  onStart(): void | null {
+    if (this.isRunning) return null
+    this.isRunning = true
 
-  //   for (let i = 0; i < this.reels.length; i++) {
-  //     const reel = this.reels[i]
-  //     reel.previousPosition = reel.position
+    for (let i = 0; i < this.reels.length; i++) {
+      const reel = this.reels[i]
+      const extra = Math.floor(Math.random() * 3)
+      const target = reel.position + 10 + i * 5 + extra
+      const time = 2500 + i * 600 + extra * 600
+      this.tweens.add({
+        targets: reel,
+        duration: time,
+        position: target,
+        ease: 'Back',
+        onComplete: i === this.reels.length - 1 ? this.reelsComplete : null,
+      })
+    }
+  }
 
-  //     for (let j = 0; j < reel.symbols.length; j++) {
-  //       const symbol = reel.symbols[j]
-  //       const previousY = symbol.y
-  //       symbol.y =
-  //         ((reel.position + j) % reel.symbols.length) * GameScene.SYMBOL_SIZE -
-  //         GameScene.SYMBOL_SIZE
-  //       if (symbol.y < 0 && previousY > GameScene.SYMBOL_SIZE) {
-  //         symbol.setTexture(this.keys[Math.floor(Math.random() * this.keys.length)])
-  //         symbol.scaleX = symbol.scaleY = Math.min(
-  //           GameScene.SYMBOL_SIZE / symbol.width,
-  //           GameScene.SYMBOL_SIZE / symbol.height,
-  //         )
-  //         symbol.x = Math.round((GameScene.SYMBOL_SIZE - symbol.width) / 2)
-  //       }
-  //     }
-  //   }
-  // }
+  update(time: number, delta: number): void | null {
+    if (!this.isRunning) return null
+
+    for (let i = 0; i < this.reels.length; i++) {
+      const reel = this.reels[i]
+      reel.previousPosition = reel.position
+
+      for (let j = 0; j < reel.symbols.length; j++) {
+        const symbol = reel.symbols[j]
+        const previousY = symbol.y
+        symbol.y =
+          ((reel.position + j) % reel.symbols.length) * this.SYMBOL_SIZE -
+          this.SYMBOL_SIZE
+        if (symbol.y < 0 && previousY > this.SYMBOL_SIZE) {
+          symbol.setTexture(this.keys[Math.floor(Math.random() * this.keys.length)])
+          symbol.scaleX = symbol.scaleY = Math.min(
+            this.SYMBOL_SIZE / symbol.width,
+            this.SYMBOL_SIZE / symbol.height,
+          )
+          symbol.x = Math.round((this.SYMBOL_SIZE - symbol.width) / 2)
+        }
+      }
+    }
+  }
 }
