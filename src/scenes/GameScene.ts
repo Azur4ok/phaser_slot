@@ -103,9 +103,14 @@ export class GameScene extends Scene {
       this.onStart()
     })
   }
-  
-  reelsComplete(): void | Function {
-    this.isRunning = false  
+
+  reelsComplete = (): void => {
+    this.isRunning = false
+    console.log(this)
+
+    for (let i = 0; i < this.reels.length; i++) {
+      this.reels[i].position = 0
+    }
   }
 
   onStart(): void | null {
@@ -137,9 +142,7 @@ export class GameScene extends Scene {
       for (let j = 0; j < reel.symbols.length; j++) {
         const symbol = reel.symbols[j]
         const previousY = symbol.y
-        symbol.y =
-          ((reel.position + j) % reel.symbols.length) * this.SYMBOL_SIZE -
-          this.SYMBOL_SIZE
+        symbol.y = ((reel.position + j) % reel.symbols.length) * this.SYMBOL_SIZE - this.SYMBOL_SIZE
         if (symbol.y < 0 && previousY > this.SYMBOL_SIZE) {
           symbol.setTexture(this.keys[Math.floor(Math.random() * this.keys.length)])
           symbol.scaleX = symbol.scaleY = Math.min(
